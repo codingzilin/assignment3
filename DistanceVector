@@ -188,9 +188,9 @@ class DistanceVector:
                                 # Direct link
                                 new_cost = link_cost
                             else:
-                                # Cost via neighbor: c(router, next_hop) + D_next_hop(dest)
-                                if dest in self.routing_tables.get(next_hop, {}):
-                                    neighbor_cost = self.routing_tables[next_hop][dest][1]
+                                # Cost via neighbor: c(router, next_hop) + min(D_next_hop(dest, *))
+                                if dest in self.distance_tables.get(next_hop, {}):
+                                    neighbor_cost = min(self.distance_tables[next_hop][dest].values())
                                     new_cost = link_cost + neighbor_cost
                                 else:
                                     new_cost = self.INF

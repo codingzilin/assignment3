@@ -130,88 +130,55 @@ class DistanceVector:
         self.initialize_distance_tables()
         
         step = 0
-        changed = True
+        # initializet=0
+        for router in sorted(self.routers):
+            self.print_distance_table(router, step)
         
+        changed = True
         while changed:
-            # Print current distance tables
-            for router in sorted(self.routers):
-                self.print_distance_table(router, step)
-            
-            if step == 0:
-                # First iteration: initialize with neighbor information
-                for router in sorted(self.routers):
-                    neighbors = self.get_neighbors(router)
-                    for dest in self.distance_tables[router]:
-                        for next_hop in self.distance_tables[router][dest]:
-                            if next_hop in neighbors:
-                                # Cost via this neighbor
-                                link_cost = self.get_link_cost(router, next_hop)
-                                if next_hop == dest:
-                                    # Direct link
-                                    self.distance_tables[router][dest][next_hop] = link_cost
-                                else:
-                                    # Will be updated in next iterations
-                                    self.distance_tables[router][dest][next_hop] = self.INF
-                            else:
-                                self.distance_tables[router][dest][next_hop] = self.INF
-                step += 1
-                continue
-            
-            # Check for changes
             changed = False
             new_tables = {}
-            
             for router in self.routers:
                 new_tables[router] = {}
                 for dest in self.distance_tables[router]:
                     new_tables[router][dest] = {}
                     for next_hop in self.distance_tables[router][dest]:
                         new_tables[router][dest][next_hop] = self.distance_tables[router][dest][next_hop]
-            
             # Update distance tables using Bellman-Ford equation
             for router in sorted(self.routers):
                 neighbors = self.get_neighbors(router)
-                
                 for dest in sorted(self.routers):
                     if dest == router:
                         continue
-                    
                     for next_hop in sorted(self.routers):
                         if next_hop == router:
                             continue
-                        
                         if next_hop in neighbors:
-                            # Calculate cost via this neighbor
                             link_cost = self.get_link_cost(router, next_hop)
-                            
                             if next_hop == dest:
-                                # Direct link
                                 new_cost = link_cost
                             else:
-                                # Cost via neighbor: c(router, next_hop) + min(D_next_hop(dest, *))
                                 if dest in self.distance_tables.get(next_hop, {}):
                                     neighbor_cost = min(self.distance_tables[next_hop][dest].values())
                                     new_cost = link_cost + neighbor_cost
                                 else:
                                     new_cost = self.INF
-                            
                             if new_cost != new_tables[router][dest][next_hop]:
                                 new_tables[router][dest][next_hop] = new_cost
                                 changed = True
                         else:
                             new_tables[router][dest][next_hop] = self.INF
-            
             # Update distance tables and routing tables
             self.distance_tables = new_tables
             for router in sorted(self.routers):
                 self.update_routing_table(router)
-            
-            step += 1
-            
+            if changed:
+                step += 1
+                for router in sorted(self.routers):
+                    self.print_distance_table(router, step)
             # Prevent infinite loops
             if step > 50:
                 break
-        
         # Print final routing tables
         for router in sorted(self.routers):
             self.print_routing_table(router)
